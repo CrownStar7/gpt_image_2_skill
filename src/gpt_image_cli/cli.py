@@ -254,6 +254,14 @@ def write_outputs(data: list[Any], out_path: Path, n: int) -> list[Path]:
     return written
 
 
+def _resolve_openai_base_url() -> str | None:
+    """Resolve optional third-party compatible endpoint base URL.
+
+    Priority: OPENAI_BASE_URL → OPENAI_API_BASE.
+    """
+    return os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE")
+
+
 def main() -> int:
     args = parse_args()
 
@@ -272,7 +280,8 @@ def main() -> int:
     ext = args.output_format or "png"
     out_path = Path(args.file).expanduser().resolve() if args.file else default_output_path(args.prompt, ext)
 
-    client = OpenAI()  # auto-reads OPENAI_API_KEY
+    base_url = _resolve_openai_base_url()
+    client = OpenAI(base_url=base_url) if base_url else OpenAI()  # auto-reads OPENAI_API_KEY
 
     try:
         result = call_edit(client, args) if args.image else call_generate(client, args)
